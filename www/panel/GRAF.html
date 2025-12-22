@@ -1,0 +1,61 @@
+<style>
+    RINPUT {padding:20px;}
+    #er {color:red;}
+
+    .a0sel {display:inline-block;padding:5px;border-radius:10px; min-width:300px;}
+    .a0in { width:15px; font-size:10px; padding:0; margin:0; }
+</style>
+
+<center>
+
+<textarea onclick="GRAF.askmode='custom'" onchange="localStorage.setItem('GRAFCODE', this.value)"
+id='GRAFCODE' style='width:95%;height:120px;font-size:12px' placeholder="
+RED = {gpioA36}
+
+BLUE = {hall_sensor} * 1
+
+if {TimeCode} < 100000 TimeCode = {UnixTime}
+GREEN = {UnixTime} - {TimeCode}
+GREEN *= 10
+if {GREEN} > 1023 {
+  GREEN = 0
+  TimeCode = {UnixTime}
+}
+
+echo [{RED},{BLUE},{GREEN}]"></textarea>
+
+<p>
+<div class='a0sel' style='background-color:#c00' onclick="GRAF.askmode='select'">
+<select id='GRAFMODE0' onchange="GRAF.CH_GM(0,'MODE',this.value)"></select>
+- <input id='GRAFMIN0' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(0,'MIN',this.value)">
+* <input id='GRAFMUL0' class='a0in' type='text' size='3' value='1' onchange="GRAF.CH_GM(0,'MUL',this.value)">
++ <input id='GRAFADD0' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(0,'ADD',this.value)">
+<div class='r' id="GRAFV0"></div>
+<div class='r' id="GRAFv0"></div>
+</div>
+
+ &nbsp; &nbsp;
+
+<div class='a0sel' style='background-color:#00c' onclick="GRAF.askmode='select'">
+<select id='GRAFMODE1' onchange="GRAF.CH_GM(1,'MODE',this.value)"></select>
+- <input id='GRAFMIN1' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(1,'MIN',this.value)">
+* <input id='GRAFMUL1' class='a0in' type='text' size='3' value='1' onchange="GRAF.CH_GM(1,'MUL',this.value)">
++ <input id='GRAFADD1' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(1,'ADD',this.value)">
+<div class='r' id="GRAFV1"></div>
+<div class='r' id="GRAFv1"></div>
+</div>
+
+ &nbsp; &nbsp;
+
+<div class='a0sel' style='background-color:#0c0' onclick="GRAF.askmode='select'">
+<select id='GRAFMODE2' onchange="GRAF.CH_GM(2,'MODE',this.value)"></select>
+- <input id='GRAFMIN2' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(2,'MIN',this.value)">
+* <input id='GRAFMUL2' class='a0in' type='text' size='3' value='1' onchange="GRAF.CH_GM(2,'MUL',this.value)">
++ <input id='GRAFADD2' class='a0in' type='text' size='3' value='0' onchange="GRAF.CH_GM(2,'ADD',this.value)">
+<div class='r' id="GRAFV2"></div>
+<div class='r' id="GRAFv2"></div>
+</div>
+
+</center>
+
+<center><div style='width:95%;height:400px' id='rg'></div></center>

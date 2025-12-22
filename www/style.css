@@ -1,0 +1,46 @@
+body {
+    font-family: sans-serif;
+    background: #f5f5f5;
+    margin: 2em;
+}
+h1 {
+    margin-bottom: 0.5em;
+}
+textarea {
+    width: 100%;
+    height: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    resize: vertical;
+}
+button {
+    margin-top: 1em;
+    padding: 0.5em 1.5em;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    background: #007bff;
+    color: white;
+    cursor: pointer;
+}
+button:hover {
+    background: #0056b3;
+}
+
+.disconnect {
+    opacity: 0.3;
+}
+.disconnect input,
+.disconnect select,
+.disconnect textarea {
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+.selected {
+    border: 4px solid #04b395 !important;
+}

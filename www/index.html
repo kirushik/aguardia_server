@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse client demo</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="mine.css" />
+  <script src="mine.js?4"></script>
+  <script type="module">
+    import("./module.js?v=" + Date.now());
+  </script>
+
+</head>
+<body>
+<div class="r"><!-- ✔❌🔴🟢🟡🟣🟠🟤🟢🔴 -->
+  <div><div class="il top-right-corner" id="status_indicator">🔴 SERVER DISCONNECTED</div></div>
+  <div><div class="il top-right-corner" id="device_indicator">🔴 DEVICE DISCONNECTED</div></div>
+</div>
+
+    <h1>Aguardia ✔❌🔴🟢🟡🟣🟠🟤🟢🔴</h1>
+
+<button class='on_server' onclick="AG.web_INFO()">INFO</button>
+<button class='on_server' onclick="AG.web_PANEL('GRAF')">GRAF</button>
+<button onclick="AG.logout()">❌ logout</button>
+
+<p><textarea class='on_server' id="text" style="max-width:800px;height:50%;"></textarea>
+<div>
+  <select class='on_server' id="select_action" style="padding: 0.5em 1.5em; width:150px;" onchange="dom('text').value=this.value;">
+    <option value=''>---</option>
+    <option value='{"action":"status"}'>status</option>
+    <option value='{"action":"my_info"}'>my_info</option>
+    <option value='{"action":"my_id"}'>my_id</option>
+    <option value='{"action":"send_to","user_id":{id},"x":"{x}","ed":"{ed}","body":"FILE.key.add AUTHORIZE.txt {my_id} {my_x}-{my_ed} {my_name}\nWS.set.key {my_id}-{my_x}-{my_ed}\nplay Drm"}'>send my keys</option>
+  </select>
+
+  <button onclick="pr('clear')">❌ clear</button>
+  <button class='on_server' onclick="AG.sendTextTo(dom('text').value)">SEND</button>
+</div>
+
+<div id="output" class="on_server log_console" style="max-height: 300px;">Loading...</div>
+
+<div id="devspanel"></div>
+
+<!----------------- DESIGN TEMPLATES --------------------->
+<div id='template' style='display:none'>
+
+
+
+<!-- info_dialog -->
+<div class='template' name='devices_panel'>
+
+<div class="grid">
+
+  <div class="item" id="Device_0" onclick="AG.www_selectDevice(0)">
+    <img src="img/SERVER.webp">
+    <div>Server</div>
+  </div>
+
+{for(devices):
+  <div class="item disconnect" id="Device_{#id}" onclick="AG.www_selectDevice({#id})">
+    <div class="num">{#id}</div>
+    <img src="img/ESP32.webp">
+    <div>{#name}</div>
+  </div>
+}
+</div>
+
+<style>
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns:repeat(auto-fill, 120px);
+}
+
+.item {
+  width:80px;
+  height:123px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:center;
+
+  text-align:center;
+  border:1px solid #060a36;
+  border-radius:8px;
+  padding:6px;
+  background:#2b1e3b;
+  box-sizing:border-box;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.item .num {
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.item img {
+  display: block;
+  max-width: 50px;
+  height: auto;
+}
+</style>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- info_dialog -->
+<div class='template' name='enter_dialog'>
+  <h5>{#text}</h5>
+  <div><input class='my-prompt-input' type="text" value="{#opt.default}" placeholder="{#opt.placeholder}"></div>
+  <center><button class="my-prompt-button" type="button" class="input_btn mv0">{#opt.enter}</button></center>
+</div>
+
+<!-- info_dialog -->
+<div class='template' name='info_dialog'>
+  <form id="info_form">
+  <div>Registered: {day:time_reg} / {dat:time_upd}</div>
+  <div>Name: <input name="name" type="text" class="hash_key" value="{#name}"></div>
+  <div>Comment: <input name="comment" type="text" class="hash_key" value="{#comment}"></div>
+  <div>Owner: <input name="owner" type="text" class="hash_key" value="{#owner}"></div>
+  <div>Location: <input name="location" type="text" class="hash_key" value="{#location}"></div>
+  </form>
+  <button id="info_save_button">SAVE</button>
+
+  <div class="r">
+    <div>Server: <div class="hash_key" onclick="cpbuf(this.textContent)">{#server_x}-{#server_ed}</div></div>
+    <div>My key: <div class="hash_key" onclick="cpbuf(this.textContent)">{#my_id}-{#my_x}-{#my_ed}</div></div>
+
+    <h4>Devices:</h4>
+      {for(keys):
+        <div style="display:flex; gap:10px; align-items:center;">
+          <b>{#name}</b>
+          <div class="hash_key " style="max-width:300px;" onclick="cpbuf(this.textContent)">{#key}</div>
+        </div>
+      }
+  </div>
+
+  <button id="new_device_button">Add New Device</button>
+
+  <style>
+    .hash_key {
+      white-space:nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding:4px;
+      cursor:pointer;
+      font-size:12px;
+      border:1px solid black;
+      width:100%;
+      max-width:400px;
+    }
+  </style>
+
+</div>
+
+
+<!-- LOGIN EMAIL DIALOG -->
+<div class='template' name='login_email_dialog'>
+
+  <h5>
+    {case(action):
+      {code_already_sent:Да блин прочти уже свою почту!}
+    }
+  </h5>
+
+  <h4>Email address:</h4>
+
+  <p><input type="text" style="width:90%" value="">
+
+</div>
+
+<!-- LOGIN CODE DIALOG -->
+<div class='template' name='login_code_dialog'>
+
+  <h4>Code XXXXXX from email:</h4>
+    
+  <p><input type="text" style="width:90%" value="">
+
+</div>
+
+
+<!-- POPUP WINDOW -->
+<div class='template' name='dialog'>
+    <div class="popup-overlay">
+        <div class="popup-window bg-{color}" style="{set.style}">
+            <button class="popup-close">X</button>
+            <h2>{header}</h2>
+            <div class='dialog-content' style='text-align:left;'>{body}</div>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM WINDOW -->
+<div class='template' name='confirm_header'><div style='font-size:16px;width:400px;'>{#nl2br:text}</div></div>
+<div class='template' name='confirm'>
+  <div style="padding:10px;text-align:center;/*width:100%;*/">
+    <button class='mv0' id="my-confirm-yes" style="
+            font-size: 20px;
+            color: white;
+            font-weight: bold;
+        padding: 10px 40px;
+        background-color: #4CAF50;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-right: 50px;
+    ">{yes}</button>
+    <button class='mv0' id="my-confirm-no" style="
+            font-size: 20px;
+            color: white;
+            font-weight: bold;
+        padding: 10px 40px;
+        background-color: #f44336;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+    ">{no}</button>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

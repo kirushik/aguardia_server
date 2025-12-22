@@ -1,0 +1,124 @@
+<style>
+
+.row_rth {
+  display: flex;
+  justify-content: space-between; /* растянуть по ширине */
+  gap: 12px; /* на случай узких экранов */
+  font-size:48px;
+}
+
+.rth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+  cursor:pointer;
+}
+
+.rth SPAN {
+    font-size:11px;
+}
+
+.rth:hover {
+  transform: scale(1.2);
+}
+
+
+
+
+/*****************
+
+.thmbn,.rth {width: 60px; text-align:center;}
+.thmbn,.rth {width: 45px; text-align:center;}
+
+
+
+
+
+
+
+.TitleTEXT {
+font-family: Impact, Charcoal, sans-serif;
+text-shadow: 1px 1px 1px #ff8f00, 3px 3px 1px #ffbf00;
+letter-spacing: 7px;
+color: #C3231E;
+}
+
+.ZON { display: inline-block; border-radius: 100%; border: 3px solid #ccc; }
+
+.rim { font: sans-serif, Impact; color: #C3231E; font-size: 10px; }
+
+@media screen and (max-width: 700px) {
+ .SC {font-size:26px;}
+ .Zdiv { padding: 20px 0 20px 0; }
+ .ZON { font-size: 40px; }
+ .TitleIMG { font-size:4function off(){ AJ("/ZAMOK-CLOSE \n play drm"); }0px; }
+ .TitleTEXT { font-size: 45px; }
+ .ZON { padding: 10px; margin: 15px; }
+ .rim { margin-top: 0px; }
+ .thmbn,.rth {width: 35px;}
+}
+
+@media screen and (min-width: 701px) {
+ .SC {font-size:46px;}
+ .Zdiv { padding: 60px; }
+ .ZON { font-size: 120px; }
+ .TitleIMG { font-size:100px; }
+ .TitleTEXT { font-size: 90px; }
+ .ZON { padding: 20px; margin: 30px; }
+ .rim { margin-top:-5px;}
+ .thmbn,.rth {width: 45px;}
+}
+
+.sc { font-size: 30px; }
+.MH,.MV { display:inline-block; } .MH { transform:scale(-1,1); } .MV { transform:scale(1,-1); }
+
+*************************/
+</style>
+
+
+<p style='font-size:16px;color:#C3231E;' id='ESPTYPE'>ESP</p>
+
+<!--
+<div class="row_rth">
+    <div class="rth">&#128663;<span id='R'>Speed R</span></div>
+    <div class="rth">&#128663;<span id='L'>Speed L</span></div>
+    <div class="rth">&#128267;<span id='bat'>Bat</span></div>
+    <div class="rth">&#127777;<span id='temp'>Temp</span></div>
+    <div class="rth">&#128161;<span id='led2'>Led2</span></div>
+    <div class="rth">&#127982;<span id='led1'>Led1</span></div>
+    <div class="rth">&#128640;<span id='steering'>Handle</span></div>
+</div>
+
+<div class='vcenter'>Посылать запросы: <label class="switch"><input id='ask' onchange="askstart()" type="checkbox" checked="false"><span class="slider round"></span></label></div>
+-->
+
+<center>
+  <div class='divta'>
+    <span class='ri'><span class='mv' onclick="ESP.execute(dom('tarea').value)">DO</span></span>
+    <textarea rows=5 class='tat' id='tarea' onchange="localStorage.setItem('LastConsole',this.value)"></textarea>
+  </div>
+    <div style="position:relative;">
+    <div style="position: absolute; right: 12px; top: 2px; font-size: 12px;" onclick="dom('tarea_res').innerHTML=''" class="mv">❌</div>
+    <div id="tarea_res" class="log_console" style="margin: 2px 8px 2px 2px;max-height: 300px;"></div>
+    </div>
+</div>
+
+</center>
+
+<div class="row_rth">
+  <div class="rth" onclick='ESP.info()'    >&#129518;<span>Info</span></div>
+  <div class="rth" onclick='ESP.restart()' >&#128244;<span>Restart</span></div>
+  <div class="rth" onclick='ESP.wifi()'    >&#128246;<span>WiFi</span></div>
+  <div class="rth" onclick="ESP.getsofts()">&#128693;<span>Update</span></div>
+  <div class="rth" onclick='ESP.gpio()'    >&#127981;<span>GPIO</span></div>
+  <div class="rth" onclick='ESP.monitor()' >&#127748;<span>Graph</span></div>
+  <div class="rth" onclick='ESP.sensor()'  >&#129517;<span>Sensor</span></div>
+  <div class="rth" onclick='ESP.fileman()' >&#128190;<span>Files</span></div>
+</div>
+
+</div>
+
+
+<p><a href='https://lleo.me/ESP8266/cfaq' target='_blank'>Help</a>

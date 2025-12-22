@@ -1,0 +1,51 @@
+[package]
+name = "aguardia_server"
+version = "0.2.2"
+edition = "2024"
+
+[dependencies]
+
+# crypto
+x25519-dalek = "2"
+ed25519-dalek = "2"
+chacha20poly1305 = "0.10"
+rand = "0.7"
+hex = "0.4"
+base64 = "0.21"
+
+# Postgress
+sqlx = { version = "0.6.3", default-features = false, features = ["postgres","runtime-tokio-native-tls","macros","migrate"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+#tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "signal"] }
+
+# email
+lettre = "0.11"
+
+# config
+config = { version = "0.15", default-features = false, features = ["json", "toml"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_with = "3"
+serde_json = "1.0"
+secrecy = "0.10.3"
+url = "2"
+
+# log
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
+
+# server
+anyhow = "1"
+actix-web = { version = "4.10", default-features = false, features = ["macros"] }
+actix-cors = "0.7.1"
+actix-ws = "0.3.0"
+actix-files = "0.6.2"
+futures-util = "0.3"
+futures = "0.3"
+
+# dev
+#tokio-stream = "0.1"
+#strum = { version = "0.27.2", features = ["derive"] }
+
+[[bin]]
+name = "aguardia_pulse"
+path = "src/main.rs"

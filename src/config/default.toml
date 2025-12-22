@@ -1,0 +1,31 @@
+# ==== SERVER ====
+bind_port = 8112
+bind_host = "0.0.0.0"
+
+# === WS ===
+heartbeat_timeout = 90
+ping_timeout = 30
+
+# === MAIL ===
+smtp2go_login = "my_site.com"
+smtp2go_password = "MyPaSsWoRd"
+smtp2go_from = "noreply@my_site.com"
+
+# === ADMINS ===
+admins = "1,2"
+
+# === POSTGRESS ===
+postgres = "postgres://user:pass@localhost/dbname"
+
+# === server ===
+loglevel = "INFO"
+
+# === web ===
+site_dir = "./www"
+
+# === crypto ===
+seed_x = ""
+seed_ed = ""
+
+email_code_expired_sec = 600
+

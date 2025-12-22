@@ -1,0 +1,343 @@
+
+.br { font-size: 8px; }
+.r { font-size: 10px; }
+.l,.ll { cursor: pointer; color: blue; text-decoration: underline; } .ll,.il { display: inline; }
+.l:hover,.ll:hover { color: violet; }
+
+
+.mv_ { cursor: pointer; position: relative; }
+.mv_:hover::after { content:""; position:absolute; left: 0; bottom: -2px; width: 100%; height: 2px; background-color: currentColor; }
+
+.mv, .mv0 { display:fit-content; cursor:pointer; }
+.mv0 { transition: transform 0.2s ease-in-out; }
+.mv0:hover { transition-property: transform; transition-duration: 0.2s; animation: none; transform: scale(1.1); }
+
+    /* Анимация: мигание фона */
+    .mymail {
+        transition: background-color 0.5s ease;
+    }
+    .mymail.animate {
+	background-color: yellow; /* Цвет при анимации */
+	animation: pulse 2s infinite; /* Анимация с повторением */
+    }
+    /* Ключевые кадры для эффекта мигания */
+    @keyframes pulse {
+	0% { background-color: yellow; }
+        50% { background-color: orange; }
+        100% { background-color: yellow; }
+    }
+
+
+
+.section.modechat.active {
+  max-width: 650px;
+}
+
+    .log_console {
+	max-width: 800px;
+	margin:10px 0 10px 0;
+        max-height: 150px;
+        overflow-y: auto; /* Включаем вертикальную прокрутку при превышении max-height */
+        height: auto; /* Автоматическая высота для подстройки под содержимое */
+        white-space: pre-wrap; /* Сохраняем перенос строк и пробелы */
+        word-wrap: break-word; /* Перенос длинных слов */
+        border: 1px solid #ccc; /* Для визуального отображения элемента */
+        padding: 10px; /* Внутренние отступы */
+        box-sizing: border-box; /* Учитываем отступы и границы в общей высоте */
+	background-color: #f9f6d5;
+	border-radius: 5px;
+	font-size: 11px;
+	color: black;
+    }
+
+
+
+/* Стили для общего блока */
+.acc_card {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 6px;
+    background-color: #d8eaea;
+    width: 435px;
+    margin-bottom: 6px;
+}
+
+/* Стили для текстового содержимого */
+.acc_content {
+    margin-left: 6px;
+    display: flex;
+    flex-direction: column; /* Расположение текста друг под другом */
+    justify-content: center; /* Выравнивание по вертикали */
+}
+
+/* Стили для заголовка */
+.acc_title {
+    font-size: 14px; /* Размер шрифта */
+    font-weight: bold; /* Полужирный текст */
+    color: black;
+}
+
+.acc_title a { color: blue !important; }
+
+/* Стили для описания */
+.acc_id {
+    font-size: 10px; /* Размер текста для описания */
+    color: #555; /* Серый цвет текста */
+}
+
+
+/* message view */
+    .fn {
+        margin-top:3px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .fn_namea {
+        padding: 1px 10px 1px 10px;
+        border: 1px solid #ccc;
+        background-color: #eee;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 1px 10px 1px 10px;
+	cursor: pointer;
+    }
+
+    .fn_name {
+        display: inline-block;
+        font-size: 12px;
+        color: black;
+    }
+
+    .typeicon {
+        display: inline-block;
+        padding: -5px 10px -5px 5px;
+        font-size: 18px;
+        margin: -5px 0 -5px 0;
+    }
+
+    .uploadme {
+        display: inline-block;
+        font-size: 18px;
+    }
+
+    .sigbut {
+	font-size:10px;
+	border-radius: 999px;
+    }
+
+    .pgpid {
+	background-color: #ffeddf;
+	display: inline-block;
+	EEEborder: 1px solid #ccc;
+	padding: 0 5px 0 5px;
+	font-size:10px;
+	border-radius: 999px;
+    }
+
+    .messagediv {
+	margin:10px 0 10px 0;
+        max-height: 300px; /* Максимальная высота элемента */
+        overflow-y: auto; /* Включаем вертикальную прокрутку при превышении max-height */
+        height: auto; /* Автоматическая высота для подстройки под содержимое */
+        white-space: pre-wrap; /* Сохраняем перенос строк и пробелы */
+        word-wrap: break-word; /* Перенос длинных слов */
+        border: 1px solid #ccc; /* Для визуального отображения элемента */
+        padding: 10px; /* Внутренние отступы */
+        box-sizing: border-box; /* Учитываем отступы и границы в общей высоте */
+	background-color: #f9f6d5;
+	border-radius: 10px;
+	font-size: 14px;
+	color: black;
+    }
+
+    .imgpre {
+	max-width: 150px;
+	max-height:150px;
+	border-radius: 7px;
+	padding-right: 5px;
+    }
+
+
+/* message write */
+	    .filezone { border-radius: 8px; background-color: #f5f5f5; width: 350px; height: 50px; display: flex; align-items: center; justify-content: center; opacity: 0.8; }
+	    .fileactive { background-color: #f5fff5 !important; opacity: 1.0 !important; }
+    .textareaw {
+      align-self: stretch;
+      border-radius: 8px;
+      border: 1px solid #356bff;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      max-width: 100%;
+	width: 350px;
+      min-height: 40px; /* Минимальная высота */
+      overflow: hidden;  /* Скрываем скролл */
+    }
+
+    .delme {
+	display: inline-block;
+	font-size: 8px;
+    }
+
+    .replytext {
+	background-color: #fffbd8;
+	color: black;
+	width: 100%;
+	padding: 10px;
+	margin: 5px 0;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: var(--size_border-radius-small);
+	box-sizing: border-box;
+    }
+
+
+/*          / chat               */
+
+	#chat-friends {
+	    height: 500px;
+	    overflow-y: scroll;
+	    min-width: fit-content;
+    	    box-sizing: border-box;
+	}
+
+
+        .chat {
+            width: 100%;
+            background: white;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+    	    box-sizing: border-box;
+	    height: 500px;
+	    overflow-y: scroll;
+        }
+
+
+
+
+
+
+
+
+
+        .msg {
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            font-size: 14px;
+            position: relative;
+	    overflow-wrap: anywhere;
+        }
+
+        .msg.animate {
+	  opacity: 0;
+	  transform: scale(0.15);
+	  animation: fadeInPopX 0.5s ease-out forwards;
+	}
+
+	@keyframes fadeInPopX {
+	  from {
+	    opacity: 0;
+	    transform: scale(0.15);
+	  }
+	  to {
+	    opacity: 1;
+	    transform: scale(1);
+	  }
+	}
+
+
+        .msg::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            bottom: 0;
+        }
+
+        .msg.me {
+            background: #0084ff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+
+        .msg.me::after {
+    	    right: -7px;
+    	    bottom: 0;
+    	    clip-path: polygon(0 0, 0 100%, 100% 100%);
+        }
+
+        .msg.he {
+            background: #e5e5ea;
+            color: black;
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+        }
+
+        .msg.he::after {
+            left: -8px;
+            bottom: 0;
+    	    clip-path: polygon(0 100%, 100% 0, 100% 100%)
+        }
+
+
+
+
+
+#chathe {
+    position:absolute;
+    z-index:3;
+    font-weight:bold;
+    font-size:18px;
+    padding:5px;
+    background-color:#fff7f7;
+    top:0;
+    left:0;
+    color: #AAA;
+    border-bottom-right-radius: 10px;
+    border:1px solid #ccc;
+}
+
+#chatme {
+    position:absolute;
+    z-index:3;
+    font-weight:bold;
+    font-size:18px;
+    padding:5px;
+    background-color:#fff7f7;
+    top:0;
+    right:0;
+    color: #AAA;
+    border-bottom-left-radius: 10px;
+    border:1px solid #ccc;
+}
+
+
+
+
+
+
+/*
+<div class="chat">
+    <div class="msg he">Привет! Как дела?</div>
+    <div class="msg me">Привет! Всё отлично, а у тебя?</div>
+    <div class="msg me">Привет! Всё отлично, а у тебя?</div>
+    <div class="msg me">Привет! Всё отлично, а у тебя?</div>
+    <div class="msg he">Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? Тоже хорошо! Чем занимаешься? </div>
+    <div class="msg me">Пишу код 😊</div>
+</div>
+*/
+/*          / chat               */
