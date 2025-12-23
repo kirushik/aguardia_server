@@ -4,7 +4,7 @@ defmodule AguardiaWeb.CommandsTest do
 
   Tests all JSON command handlers for the cmd=0x00 protocol.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias AguardiaWeb.Commands
   alias Aguardia.Crypto
@@ -84,7 +84,8 @@ defmodule AguardiaWeb.CommandsTest do
           ed: to_hex(ed_public)
         })
 
-      assert {:ok, user.id} = Commands.handle(1, json)
+      expected_id = user.id
+      assert {:ok, ^expected_id} = Commands.handle(1, json)
     end
 
     test "returns false when user not found" do

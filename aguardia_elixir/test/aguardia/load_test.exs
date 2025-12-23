@@ -11,6 +11,13 @@ defmodule Aguardia.LoadTest do
   alias Aguardia.ServerState
   alias AguardiaWeb.Commands
 
+  setup do
+    # Use shared mode for sandbox so spawned processes can access the database
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Aguardia.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(Aguardia.Repo, {:shared, self()})
+    :ok
+  end
+
   # ==============================================================
   # Configuration
   # ==============================================================
@@ -75,23 +82,35 @@ defmodule Aguardia.LoadTest do
           {i + 100_000, generate_user_keys()}
         end
 
-      # Register all concurrently
-      tasks =
+      # Register all concurrently using spawned processes that stay alive
+      test_pid = self()
+
+      pids =
         for {user_id, keys} <- users do
-          Task.async(fn ->
+          spawn(fn ->
             Registry.register(Aguardia.SessionRegistry, user_id, %{
               x: keys.x_public,
               ed: keys.ed_public
             })
 
-            user_id
+            # Signal registration complete
+            send(test_pid, {:registered, user_id})
+
+            # Keep process alive until told to exit
+            receive do
+              :exit -> :ok
+            end
           end)
         end
 
-      # Wait for all registrations
-      registered = Enum.map(tasks, fn task -> Task.await(task, @timeout) end)
-
-      assert length(registered) == @session_count
+      # Wait for all registrations to complete
+      for {user_id, _keys} <- users do
+        receive do
+          {:registered, ^user_id} -> :ok
+        after
+          @timeout -> flunk("Timeout waiting for registration of user #{user_id}")
+        end
+      end
 
       # Verify all are registered
       for {user_id, keys} <- users do
@@ -105,9 +124,9 @@ defmodule Aguardia.LoadTest do
         end
       end
 
-      # Cleanup
-      for {user_id, _keys} <- users do
-        Registry.unregister(Aguardia.SessionRegistry, user_id)
+      # Cleanup - tell all processes to exit
+      for pid <- pids do
+        send(pid, :exit)
       end
     end
 

@@ -5,10 +5,15 @@ defmodule Aguardia.FuzzingTest do
   These tests verify that the server handles malformed input gracefully
   without crashing or exposing internal errors.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Aguardia.Crypto
   alias AguardiaWeb.Commands
+
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Aguardia.Repo)
+    :ok
+  end
 
   # ==============================================================
   # Hex Decoding Fuzzing
@@ -139,7 +144,7 @@ defmodule Aguardia.FuzzingTest do
       for input <- invalid_jsons do
         result = Commands.handle(1, input)
         # Should return error, not crash
-        assert {:error, _} = result or {:ok, _} = result
+        assert match?({:error, _}, result) or match?({:ok, _}, result)
       end
     end
 
@@ -172,7 +177,7 @@ defmodule Aguardia.FuzzingTest do
       for input <- wrong_types do
         result = Commands.handle(1, input)
         # Should handle gracefully
-        assert {:error, _} = result or {:ok, _} = result
+        assert match?({:error, _}, result) or match?({:ok, _}, result)
       end
     end
 
@@ -205,7 +210,7 @@ defmodule Aguardia.FuzzingTest do
 
       result = Commands.handle(1, json)
       # Should handle (may succeed or fail, but shouldn't crash)
-      assert {:error, _} = result or {:ok, _} = result
+      assert match?({:error, _}, result) or match?({:ok, _}, result)
     end
 
     test "handles JSON with extra unexpected fields" do
@@ -241,7 +246,7 @@ defmodule Aguardia.FuzzingTest do
         json = Jason.encode!(%{action: "update_my_info", info: %{data: char}})
         result = Commands.handle(1, json)
         # Should handle without crashing
-        assert {:error, _} = result or {:ok, _} = result
+        assert match?({:error, _}, result) or match?({:ok, _}, result)
       end
     end
   end

@@ -2,8 +2,9 @@ import Config
 
 config :aguardia, Aguardia.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "qwerty123",
   hostname: "localhost",
+  port: 5432,
   database: "aguardia_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
@@ -23,6 +24,9 @@ config :aguardia,
   site_dir: "./priv/static"
 
 config :aguardia, Aguardia.Mailer, adapter: Swoosh.Adapters.Test
+
+# Disable Swoosh API client for test environment
+config :swoosh, :api_client, false
 
 config :logger, level: :warning
 

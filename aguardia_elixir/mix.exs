@@ -1,6 +1,13 @@
 defmodule Aguardia.MixProject do
   use Mix.Project
 
+  # Fix for libsodium compilation on modern GCC (Ubuntu 25.10+)
+  # strnlen() requires _GNU_SOURCE to be declared in string.h
+  @compile_env_cflags System.get_env("CFLAGS", "")
+  unless String.contains?(@compile_env_cflags, "_GNU_SOURCE") do
+    System.put_env("CFLAGS", "-D_GNU_SOURCE #{@compile_env_cflags}")
+  end
+
   def project do
     [
       app: :aguardia,
@@ -33,7 +40,7 @@ defmodule Aguardia.MixProject do
       {:jason, "~> 1.4"},
       {:swoosh, "~> 1.15"},
       {:gen_smtp, "~> 1.2"},
-      {:enacl, "~> 1.2"},
+      {:libsodium, "~> 2.0"},
       {:plug_cowboy, "~> 2.7", only: :test}
     ]
   end

@@ -21,8 +21,11 @@ defmodule AguardiaWeb.Commands do
   @spec handle(integer(), String.t()) :: {:ok, term()} | {:error, String.t()}
   def handle(user_id, json_text) do
     case Jason.decode(json_text) do
-      {:ok, %{"action" => action} = params} ->
+      {:ok, %{"action" => action} = params} when is_binary(action) ->
         handle_action(action, params, user_id)
+
+      {:ok, %{"action" => _}} ->
+        {:error, "Invalid action type"}
 
       {:ok, _} ->
         {:error, "Missing action"}
@@ -160,7 +163,7 @@ defmodule AguardiaWeb.Commands do
   end
 
   defp handle_action(action, _params, _user_id) do
-    Logger.warning("Unknown action: #{action}")
+    Logger.warning("Unknown action: #{inspect(action)}")
     {:error, "Not implemented"}
   end
 

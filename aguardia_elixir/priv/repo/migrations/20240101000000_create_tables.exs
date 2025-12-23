@@ -44,10 +44,14 @@ defmodule Aguardia.Repo.Migrations.CreateTables do
       add(:payload, :map, null: false)
     end
 
-    create(index(:data, [:device_id, :time], order_by: [desc: :time]))
+    create(index(:data, [:device_id]))
+
+    # Create descending index on time for efficient queries
+    execute("CREATE INDEX data_device_id_time_desc_idx ON data (device_id, time DESC)")
   end
 
   def down do
+    execute("DROP INDEX IF EXISTS data_device_id_time_desc_idx")
     execute("DROP TRIGGER IF EXISTS trg_users_time_upd ON users")
     execute("DROP FUNCTION IF EXISTS users_set_time_upd()")
 
