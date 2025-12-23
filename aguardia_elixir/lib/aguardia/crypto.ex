@@ -9,6 +9,8 @@ defmodule Aguardia.Crypto do
 
   Critical: The nonce derivation must match the Rust implementation exactly:
   24-byte nonce is created by repeating 8-byte little-endian timestamp 3 times.
+
+  This module uses the `libsodium` port driver for crypto operations.
   """
 
   @doc """
@@ -62,7 +64,7 @@ defmodule Aguardia.Crypto do
   """
   @spec x25519_public(binary()) :: binary()
   def x25519_public(secret) when byte_size(secret) == 32 do
-    :enacl.curve25519_scalarmult_base(secret)
+    :libsodium_crypto_scalarmult_curve25519.base(secret)
   end
 
   @doc """
@@ -71,7 +73,7 @@ defmodule Aguardia.Crypto do
   @spec x25519_shared(binary(), binary()) :: binary()
   def x25519_shared(my_secret, their_public)
       when byte_size(my_secret) == 32 and byte_size(their_public) == 32 do
-    :enacl.curve25519_scalarmult(my_secret, their_public)
+    :libsodium_crypto_scalarmult_curve25519.crypto_scalarmult_curve25519(my_secret, their_public)
   end
 
   # ============================================================
@@ -84,10 +86,8 @@ defmodule Aguardia.Crypto do
   """
   @spec ed25519_keypair_from_seed(binary()) :: {binary(), binary()}
   def ed25519_keypair_from_seed(seed) when byte_size(seed) == 32 do
-    # enacl expects a sign keypair; we derive from seed
-    # The secret key in ed25519 is seed || public_key (64 bytes)
-    {pk, sk} = :enacl.sign_seed_keypair(seed)
-    {sk, pk}
+    {public, secret} = :libsodium_crypto_sign_ed25519.seed_keypair(seed)
+    {secret, public}
   end
 
   @doc """
@@ -105,7 +105,7 @@ defmodule Aguardia.Crypto do
   """
   @spec sign(binary(), binary()) :: binary()
   def sign(data, secret_key) when byte_size(secret_key) == 64 do
-    :enacl.sign_detached(data, secret_key)
+    :libsodium_crypto_sign_ed25519.detached(data, secret_key)
   end
 
   @doc """
@@ -114,8 +114,8 @@ defmodule Aguardia.Crypto do
   @spec verify(binary(), binary(), binary()) :: boolean()
   def verify(data, signature, public_key)
       when byte_size(signature) == 64 and byte_size(public_key) == 32 do
-    case :enacl.sign_verify_detached(signature, data, public_key) do
-      {:ok, _} -> true
+    case :libsodium_crypto_sign_ed25519.verify_detached(signature, data, public_key) do
+      0 -> true
       _ -> false
     end
   end
@@ -132,7 +132,7 @@ defmodule Aguardia.Crypto do
     shared = x25519_shared(my_secret, their_public)
     nonce_bytes = nonce_from_u64(nonce)
     # AEAD with empty associated data
-    :enacl.aead_xchacha20poly1305_ietf_encrypt(plaintext, <<>>, nonce_bytes, shared)
+    :libsodium_crypto_aead_xchacha20poly1305.ietf_encrypt(plaintext, <<>>, nonce_bytes, shared)
   end
 
   @doc """
@@ -146,14 +146,25 @@ defmodule Aguardia.Crypto do
     nonce_bytes = nonce_from_u64(nonce)
 
     try do
-      plaintext =
-        :enacl.aead_xchacha20poly1305_ietf_decrypt(ciphertext, <<>>, nonce_bytes, shared)
+      result =
+        :libsodium_crypto_aead_xchacha20poly1305.ietf_decrypt(
+          ciphertext,
+          <<>>,
+          nonce_bytes,
+          shared
+        )
 
-      {:ok, plaintext}
+      # libsodium returns -1 on decryption failure instead of raising
+      case result do
+        -1 -> {:error, :decrypt_failed}
+        plaintext when is_binary(plaintext) -> {:ok, plaintext}
+        _ -> {:error, :decrypt_failed}
+      end
     rescue
       _ -> {:error, :decrypt_failed}
     catch
       :error, _ -> {:error, :decrypt_failed}
+      :exit, _ -> {:error, :decrypt_failed}
     end
   end
 

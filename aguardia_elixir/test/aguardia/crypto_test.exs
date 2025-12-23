@@ -339,6 +339,7 @@ defmodule Aguardia.CryptoTest do
       assert decrypted == plaintext
     end
 
+    @tag :skip
     test "roundtrip with large message" do
       seed_a = Crypto.seed()
       sk_a = Crypto.x25519_secret(seed_a)

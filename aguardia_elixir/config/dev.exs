@@ -2,8 +2,9 @@ import Config
 
 config :aguardia, Aguardia.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "qwerty123",
   hostname: "localhost",
+  port: 5432,
   database: "aguardia_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,

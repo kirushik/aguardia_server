@@ -31,12 +31,23 @@ defmodule Aguardia.Schema.User do
     user
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_length(:public_x, is: 32)
-    |> validate_length(:public_ed, is: 32)
+    |> validate_binary_size(:public_x, 32)
+    |> validate_binary_size(:public_ed, 32)
     |> validate_format(:email, ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "invalid email format")
     |> unique_constraint(:public_x)
     |> unique_constraint(:public_ed)
     |> unique_constraint(:email)
+  end
+
+  # Custom validator for binary byte size (validate_length doesn't work for binaries)
+  defp validate_binary_size(changeset, field, size) do
+    validate_change(changeset, field, fn _field, value ->
+      if is_binary(value) and byte_size(value) == size do
+        []
+      else
+        [{field, "must be #{size} bytes"}]
+      end
+    end)
   end
 
   @doc """
