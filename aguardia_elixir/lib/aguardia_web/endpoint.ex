@@ -1,51 +1,3 @@
-defmodule AguardiaWeb.Endpoint do
-  use Phoenix.Endpoint, otp_app: :aguardia
-
-  @session_options [
-    store: :cookie,
-    key: "_aguardia_key",
-    signing_salt: "aguardia_salt",
-    same_site: "Lax"
-  ]
-
-  # WebSocket upgrade plug - must come before other processing
-  plug(AguardiaWeb.SocketPlug)
-
-  # Serve static files from configured site_dir
-  plug(Plug.Static,
-    at: "/",
-    from: {:aguardia, "priv/static"},
-    gzip: false,
-    only: AguardiaWeb.static_paths()
-  )
-
-  # Code reloading can be explicitly enabled under the
-  # :code_reloader configuration of your endpoint.
-  if code_reloading? do
-    plug(Phoenix.CodeReloader)
-  end
-
-  plug(Plug.RequestId)
-  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
-
-  plug(Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
-    json_decoder: Phoenix.json_library()
-  )
-
-  plug(Plug.MethodOverride)
-  plug(Plug.Head)
-  plug(Plug.Session, @session_options)
-
-  # CORS - allow all origins (matching Rust implementation)
-  plug(CORSPlug)
-
-  plug(AguardiaWeb.Router)
-
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
-end
-
 defmodule CORSPlug do
   @moduledoc """
   Simple CORS plug that allows all origins (matching Rust implementation).
@@ -117,4 +69,52 @@ defmodule AguardiaWeb.SocketPlug do
         |> halt()
     end
   end
+end
+
+defmodule AguardiaWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :aguardia
+
+  @session_options [
+    store: :cookie,
+    key: "_aguardia_key",
+    signing_salt: "aguardia_salt",
+    same_site: "Lax"
+  ]
+
+  # WebSocket upgrade plug - must come before other processing
+  plug(AguardiaWeb.SocketPlug)
+
+  # Serve static files from configured site_dir
+  plug(Plug.Static,
+    at: "/",
+    from: {:aguardia, "priv/static"},
+    gzip: false,
+    only: AguardiaWeb.static_paths()
+  )
+
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    plug(Phoenix.CodeReloader)
+  end
+
+  plug(Plug.RequestId)
+  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
+
+  plug(Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+  )
+
+  plug(Plug.MethodOverride)
+  plug(Plug.Head)
+  plug(Plug.Session, @session_options)
+
+  # CORS - allow all origins (matching Rust implementation)
+  plug(CORSPlug)
+
+  plug(AguardiaWeb.Router)
+
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
 end
