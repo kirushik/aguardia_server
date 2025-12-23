@@ -330,7 +330,7 @@ defmodule Aguardia.FuzzingTest do
       plaintext = "test message"
       nonce = Crypto.get_unixtime()
 
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
 
       # Corrupt the ciphertext
       corrupted = :binary.part(ciphertext, 0, byte_size(ciphertext) - 1) <> <<0xFF>>

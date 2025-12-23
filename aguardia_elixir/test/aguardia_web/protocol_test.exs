@@ -208,7 +208,7 @@ defmodule AguardiaWeb.ProtocolTest do
       inner = <<message_id::little-16, cmd::8, body::binary>>
 
       # Encrypt and sign
-      encrypted =
+      {:ok, encrypted} =
         Crypto.encrypt_and_sign(inner, client_x_secret, client_ed_secret, server_x_public)
 
       # Create outer packet (addr=0 for server)
