@@ -49,6 +49,15 @@ defmodule Aguardia.EmailCodes do
   end
 
   @doc """
+  Verify that a code matches for the given email.
+  Returns `true` if valid, `false` otherwise.
+  """
+  @spec verify(String.t(), String.t()) :: boolean()
+  def verify(email, code) do
+    valid?(email, code)
+  end
+
+  @doc """
   Delete the code for an email (after successful login).
   """
   @spec delete(String.t()) :: :ok

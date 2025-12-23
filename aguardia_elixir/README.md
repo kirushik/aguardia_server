@@ -150,12 +150,50 @@ Aguardia.Application
 
 ## Development
 
-Run tests:
+### Running Tests
+
+The project includes comprehensive tests:
+
 ```bash
+# Run all tests
 mix test
+
+# Run specific test categories
+mix test test/aguardia/crypto_test.exs      # Crypto compatibility tests
+mix test test/aguardia_web/commands_test.exs # Command handler tests
+mix test test/aguardia_web/protocol_test.exs # Protocol compliance tests
+mix test test/aguardia/fuzzing_test.exs      # Input fuzzing tests
+mix test test/aguardia/load_test.exs         # Load/performance tests
+mix test test/aguardia/email_codes_test.exs  # Email codes tests
+
+# Run with verbose output
+mix test --trace
+
+# Run excluding slow tests
+mix test --exclude load
 ```
 
-Format code:
+Or use the test runner script:
+```bash
+./run_tests.sh           # Run all tests
+./run_tests.sh crypto    # Run only crypto tests
+./run_tests.sh quick     # Run quick tests (exclude load)
+./run_tests.sh setup     # Setup test database only
+```
+
+### Test Categories
+
+| Category | Description |
+|----------|-------------|
+| `crypto` | Verifies Rust compatibility using test vectors from the original implementation |
+| `commands` | Tests all JSON command handlers (cmd=0x00) |
+| `protocol` | Validates binary packet format and framing |
+| `fuzzing` | Tests robustness against malformed inputs |
+| `load` | Concurrent connection and performance tests |
+| `email_codes` | ETS-based email code storage tests |
+
+### Format Code
+
 ```bash
 mix format
 ```
