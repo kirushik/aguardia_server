@@ -16,7 +16,8 @@ defmodule Aguardia.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      releases: releases()
     ]
   end
 
@@ -42,7 +43,21 @@ defmodule Aguardia.MixProject do
       {:hackney, "~> 1.9"},
       {:gen_smtp, "~> 1.2"},
       {:libsodium, "~> 2.0"},
-      {:plug_cowboy, "~> 2.7", only: :test}
+      {:plug_cowboy, "~> 2.7", only: :test},
+      {:burrito, "~> 1.0"}
+    ]
+  end
+
+  defp releases do
+    [
+      aguardia: [
+        steps: [:assemble, &Burrito.wrap/1],
+        burrito: [
+          targets: [
+            linux_x64: [os: :linux, cpu: :x86_64]
+          ]
+        ]
+      ]
     ]
   end
 

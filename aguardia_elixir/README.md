@@ -40,6 +40,93 @@ Or run in interactive mode:
 iex -S mix phx.server
 ```
 
+## Building Standalone Binary
+
+The Elixir implementation can be compiled into a standalone executable using [Burrito](https://github.com/burrito-elixir/burrito). This creates a self-extracting binary that bundles the BEAM runtime, eliminating the need to have Erlang/Elixir installed on the target system.
+
+### Requirements
+
+To build standalone binaries, you need:
+- Zig 0.15.2 (install via `asdf`, `mise`, or download from [ziglang.org](https://ziglang.org/download/))
+- XZ compression tools (`xz`)
+
+### Building for Linux x64
+
+```bash
+# Build the standalone binary
+MIX_ENV=prod mix release
+
+# The binary will be created at:
+# burrito_out/aguardia_linux_x64
+```
+
+The output binary is a single self-contained executable that can be distributed to any Linux x64 system.
+
+### Running the Standalone Binary
+
+```bash
+# Make sure it's executable
+chmod +x aguardia_linux_x64
+
+# Run with required environment variables
+AG_SEED_X="your-64-char-hex-seed" \
+AG_SEED_ED="your-64-char-hex-seed" \
+AG_POSTGRES="postgres://user:pass@localhost/aguardia" \
+./aguardia_linux_x64
+```
+
+### First Run Behavior
+
+On the first run, the binary will:
+1. Extract the BEAM runtime and application code to a cache directory
+2. Start the Aguardia server
+
+Subsequent runs will reuse the extracted payload unless a new version is detected.
+
+### Maintenance Commands
+
+The standalone binary includes built-in maintenance commands:
+
+```bash
+# Show installation directory
+./aguardia_linux_x64 maintenance directory
+
+# Uninstall extracted payload
+./aguardia_linux_x64 maintenance uninstall
+
+# Show binary metadata
+./aguardia_linux_x64 maintenance meta
+```
+
+### Building for Other Targets
+
+To add additional targets, modify the `releases/0` function in `mix.exs`:
+
+```elixir
+defp releases do
+  [
+    aguardia: [
+      steps: [:assemble, &Burrito.wrap/1],
+      burrito: [
+        targets: [
+          linux_x64: [os: :linux, cpu: :x86_64],
+          # Add more targets as needed:
+          # macos: [os: :darwin, cpu: :x86_64],
+          # macos_silicon: [os: :darwin, cpu: :aarch64],
+          # windows: [os: :windows, cpu: :x86_64]
+        ]
+      ]
+    ]
+  ]
+end
+```
+
+Then build a specific target:
+
+```bash
+BURRITO_TARGET=linux_x64 MIX_ENV=prod mix release
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -207,6 +294,16 @@ This implementation maintains full protocol compatibility with the Rust version,
 - Message framing
 - JSON command structure
 - Database schema
+
+## Standalone Binary Deployment
+
+For production deployment without requiring Erlang/Elixir on the target system, see the [Building Standalone Binary](#building-standalone-binary) section above.
+
+The Burrito-wrapped binary is ideal for:
+- On-premise deployments where you cannot install Erlang
+- Docker-less deployments
+- Distribution as a single executable
+- CI/CD pipelines that produce portable artifacts
 
 ## License
 

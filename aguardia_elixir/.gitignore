@@ -63,3 +63,6 @@ Thumbs.db
 /priv/static/assets/
 /priv/static/cache_manifest.json
 /assets/node_modules/
+
+# Burrito build output
+/burrito_out/
