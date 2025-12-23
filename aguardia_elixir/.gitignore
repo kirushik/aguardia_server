@@ -66,3 +66,7 @@ Thumbs.db
 
 # Burrito build output
 /burrito_out/
+
+# Musl libs cache (downloaded Alpine libsodium for Burrito builds)
+/priv/musl_libs_cache/
+/priv/musl_libs/

@@ -49,10 +49,17 @@ The Elixir implementation can be compiled into a standalone executable using [Bu
 To build standalone binaries, you need:
 - Zig 0.15.2 (install via `asdf`, `mise`, or download from [ziglang.org](https://ziglang.org/download/))
 - XZ compression tools (`xz`)
+- patchelf (`apt install patchelf` on Debian/Ubuntu)
+- curl (for downloading musl-compiled libsodium)
+
+The build process automatically downloads a musl-compiled libsodium from Alpine Linux and bundles it into the binary, so the resulting executable is fully self-contained and does not require libsodium on the target system.
 
 ### Building for Linux x64
 
 ```bash
+# Ensure libsalty2 NIF is compiled
+MIX_ENV=prod mix deps.compile libsalty2
+
 # Build the standalone binary
 MIX_ENV=prod mix release
 
@@ -60,7 +67,11 @@ MIX_ENV=prod mix release
 # burrito_out/aguardia_linux_x64
 ```
 
-The output binary is a single self-contained executable that can be distributed to any Linux x64 system.
+The output binary is a single self-contained executable (~16MB) that can be distributed to any Linux x64 system. It includes:
+- The BEAM runtime (musl-based)
+- All application code
+- The libsalty2 NIF
+- A musl-compiled libsodium library
 
 ### Running the Standalone Binary
 
@@ -83,15 +94,66 @@ On the first run, the binary will:
 
 Subsequent runs will reuse the extracted payload unless a new version is detected.
 
-### Maintenance Commands
+### CLI Commands
 
-The standalone binary includes built-in maintenance commands:
+The standalone binary provides ergonomic commands for database management and server control:
+
+```bash
+# Show help (no AG_POSTGRES required)
+./aguardia_linux_x64 --help
+
+# Set the database connection URL
+export AG_POSTGRES="postgres://user:pass@localhost/aguardia"
+
+# Create the database and run migrations (recommended for first setup)
+./aguardia_linux_x64 setup
+
+# Or run them separately:
+./aguardia_linux_x64 createdb
+./aguardia_linux_x64 migrate
+
+# Check migration status
+./aguardia_linux_x64 migration_status
+
+# Rollback last migration (if needed)
+./aguardia_linux_x64 rollback
+
+# Rollback multiple migrations
+./aguardia_linux_x64 rollback 3
+
+# Drop database (WARNING: destroys all data!)
+./aguardia_linux_x64 dropdb
+
+# Run arbitrary Elixir code
+./aguardia_linux_x64 eval "IO.puts(:hello)"
+
+# Start the server (default, no command needed)
+./aguardia_linux_x64
+```
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| (none) | Start the server |
+| `setup` | Create database and run all migrations |
+| `migrate` | Run pending migrations |
+| `rollback [N]` | Rollback last N migrations (default: 1) |
+| `createdb` | Create the database |
+| `dropdb` | Drop the database (destroys all data!) |
+| `migration_status` | Show migration status |
+| `eval "CODE"` | Execute arbitrary Elixir code |
+| `help`, `-h`, `--help` | Show help message |
+
+### Burrito Maintenance Commands
+
+The standalone binary includes built-in Burrito maintenance commands:
 
 ```bash
 # Show installation directory
 ./aguardia_linux_x64 maintenance directory
 
-# Uninstall extracted payload
+# Uninstall extracted payload (clear cache)
 ./aguardia_linux_x64 maintenance uninstall
 
 # Show binary metadata
