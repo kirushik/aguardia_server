@@ -16,7 +16,7 @@ A secure WebSocket server for encrypted device-to-device communication, ported f
 
 - Elixir 1.14+
 - PostgreSQL 14+
-- libsodium (for enacl NIF)
+- libsodium 1.0.12+ (system library required by libsalty2 NIF)
 
 ## Installation
 
