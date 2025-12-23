@@ -1,4 +1,9 @@
 defmodule Aguardia.Crypto do
+  # Maximum plaintext size for encrypt_message/4.
+  # The libsodium Erlang port driver segfaults with messages larger than ~132KB.
+  # We use 128KB (131072 bytes) as a conservative safe limit.
+  @max_message_size 131_072
+
   @moduledoc """
   Cryptographic operations for the Aguardia protocol.
 
@@ -11,7 +16,30 @@ defmodule Aguardia.Crypto do
   24-byte nonce is created by repeating 8-byte little-endian timestamp 3 times.
 
   This module uses the `libsodium` port driver for crypto operations.
+
+  ## Message Size Limits
+
+  The libsodium Erlang port driver has a limitation with large messages that can
+  cause segmentation faults. To prevent this, encryption functions enforce a
+  maximum plaintext size of #{@max_message_size} bytes (128KB).
+
+  For larger messages, consider chunking the data or using a streaming approach.
   """
+
+  @doc """
+  Returns the maximum allowed message size for encryption.
+
+  The libsodium Erlang port driver has a bug that causes segmentation faults
+  when encrypting messages larger than approximately 132KB. This limit is set
+  to 128KB (131,072 bytes) to provide a safe margin.
+
+  ## Examples
+
+      iex> Aguardia.Crypto.max_message_size()
+      131072
+  """
+  @spec max_message_size() :: non_neg_integer()
+  def max_message_size, do: @max_message_size
 
   @doc """
   Generate a random 32-byte seed.
@@ -126,64 +154,125 @@ defmodule Aguardia.Crypto do
 
   @doc """
   Encrypt a message using XChaCha20-Poly1305.
+
+  Returns `{:ok, ciphertext}` on success, or `{:error, reason}` on failure.
+
+  ## Errors
+
+  - `{:error, :message_too_large}` - The plaintext exceeds #{@max_message_size} bytes.
+    The libsodium Erlang port driver has a bug that causes segmentation faults
+    with large messages. Use `max_message_size/0` to check the limit.
+
+  ## Examples
+
+      iex> {:ok, ciphertext} = Crypto.encrypt_message(their_public, my_secret, "hello", nonce)
+      iex> is_binary(ciphertext)
+      true
+
+      iex> large_message = :crypto.strong_rand_bytes(200_000)
+      iex> Crypto.encrypt_message(their_public, my_secret, large_message, nonce)
+      {:error, :message_too_large}
   """
-  @spec encrypt_message(binary(), binary(), binary(), non_neg_integer()) :: binary()
+  @spec encrypt_message(binary(), binary(), binary(), non_neg_integer()) ::
+          {:ok, binary()} | {:error, :message_too_large}
   def encrypt_message(their_public, my_secret, plaintext, nonce) do
-    shared = x25519_shared(my_secret, their_public)
-    nonce_bytes = nonce_from_u64(nonce)
-    # AEAD with empty associated data
-    :libsodium_crypto_aead_xchacha20poly1305.ietf_encrypt(plaintext, <<>>, nonce_bytes, shared)
-  end
-
-  @doc """
-  Decrypt a message using XChaCha20-Poly1305.
-  Returns {:ok, plaintext} or {:error, :decrypt_failed}.
-  """
-  @spec decrypt_message(binary(), binary(), binary(), non_neg_integer()) ::
-          {:ok, binary()} | {:error, :decrypt_failed}
-  def decrypt_message(their_public, my_secret, ciphertext, nonce) do
-    shared = x25519_shared(my_secret, their_public)
-    nonce_bytes = nonce_from_u64(nonce)
-
-    try do
-      result =
-        :libsodium_crypto_aead_xchacha20poly1305.ietf_decrypt(
-          ciphertext,
+    if byte_size(plaintext) > @max_message_size do
+      {:error, :message_too_large}
+    else
+      shared = x25519_shared(my_secret, their_public)
+      nonce_bytes = nonce_from_u64(nonce)
+      # AEAD with empty associated data
+      ciphertext =
+        :libsodium_crypto_aead_xchacha20poly1305.ietf_encrypt(
+          plaintext,
           <<>>,
           nonce_bytes,
           shared
         )
 
-      # libsodium returns -1 on decryption failure instead of raising
-      case result do
-        -1 -> {:error, :decrypt_failed}
-        plaintext when is_binary(plaintext) -> {:ok, plaintext}
+      {:ok, ciphertext}
+    end
+  end
+
+  @doc """
+  Decrypt a message using XChaCha20-Poly1305.
+
+  Returns `{:ok, plaintext}` on success, or `{:error, reason}` on failure.
+
+  ## Errors
+
+  - `{:error, :ciphertext_too_large}` - The ciphertext exceeds the maximum allowed size.
+    This corresponds to a plaintext that would have been larger than #{@max_message_size} bytes.
+  - `{:error, :decrypt_failed}` - Decryption failed (invalid ciphertext or wrong key).
+
+  ## Examples
+
+      iex> {:ok, plaintext} = Crypto.decrypt_message(their_public, my_secret, ciphertext, nonce)
+      iex> plaintext
+      "hello"
+  """
+  @spec decrypt_message(binary(), binary(), binary(), non_neg_integer()) ::
+          {:ok, binary()} | {:error, :decrypt_failed | :ciphertext_too_large}
+  def decrypt_message(their_public, my_secret, ciphertext, nonce) do
+    # Ciphertext includes 16-byte Poly1305 tag, so max ciphertext size is max_message_size + 16
+    max_ciphertext_size = @max_message_size + 16
+
+    if byte_size(ciphertext) > max_ciphertext_size do
+      {:error, :ciphertext_too_large}
+    else
+      shared = x25519_shared(my_secret, their_public)
+      nonce_bytes = nonce_from_u64(nonce)
+
+      try do
+        result =
+          :libsodium_crypto_aead_xchacha20poly1305.ietf_decrypt(
+            ciphertext,
+            <<>>,
+            nonce_bytes,
+            shared
+          )
+
+        # libsodium returns -1 on decryption failure instead of raising
+        case result do
+          -1 -> {:error, :decrypt_failed}
+          plaintext when is_binary(plaintext) -> {:ok, plaintext}
+          _ -> {:error, :decrypt_failed}
+        end
+      rescue
         _ -> {:error, :decrypt_failed}
+      catch
+        _, _ -> {:error, :decrypt_failed}
       end
-    rescue
-      _ -> {:error, :decrypt_failed}
-    catch
-      :error, _ -> {:error, :decrypt_failed}
-      :exit, _ -> {:error, :decrypt_failed}
     end
   end
 
   @doc """
   Encrypt and sign a message.
 
-  Returns: <<nonce::64, ciphertext::binary, signature::64>>
+  Returns `{:ok, packet}` where packet is `<<nonce::64, ciphertext::binary, signature::64>>`,
+  or `{:error, reason}` on failure.
+
+  ## Errors
+
+  - `{:error, :message_too_large}` - The plaintext exceeds #{@max_message_size} bytes.
   """
-  @spec encrypt_and_sign(binary(), binary(), binary(), binary()) :: binary()
+  @spec encrypt_and_sign(binary(), binary(), binary(), binary()) ::
+          {:ok, binary()} | {:error, :message_too_large}
   def encrypt_and_sign(plaintext, x_my_secret, ed_my_secret, x_their_public) do
     nonce = get_unixtime()
-    ciphertext = encrypt_message(x_their_public, x_my_secret, plaintext, nonce)
 
-    # Create data to sign: nonce || ciphertext
-    signed_data = <<nonce::little-64, ciphertext::binary>>
-    signature = sign(signed_data, ed_my_secret)
+    case encrypt_message(x_their_public, x_my_secret, plaintext, nonce) do
+      {:ok, ciphertext} ->
+        # Create data to sign: nonce || ciphertext
+        signed_data = <<nonce::little-64, ciphertext::binary>>
+        signature = sign(signed_data, ed_my_secret)
 
-    # Return: nonce || ciphertext || signature
-    <<nonce::little-64, ciphertext::binary, signature::binary>>
+        # Return: nonce || ciphertext || signature
+        {:ok, <<nonce::little-64, ciphertext::binary, signature::binary>>}
+
+      {:error, _} = error ->
+        error
+    end
   end
 
   @doc """
@@ -197,10 +286,12 @@ defmodule Aguardia.Crypto do
   - {:error, :bad_signature} if signature verification fails
   - {:error, :bad_nonce} if nonce is too far from current time
   - {:error, :decrypt_failed} if decryption fails
+  - {:error, :ciphertext_too_large} if ciphertext exceeds maximum size
   """
   @spec verify_and_decrypt(binary(), binary(), binary(), binary(), non_neg_integer()) ::
           {:ok, binary()}
-          | {:error, :bad_format | :bad_signature | :bad_nonce | :decrypt_failed}
+          | {:error,
+             :bad_format | :bad_signature | :bad_nonce | :decrypt_failed | :ciphertext_too_large}
   def verify_and_decrypt(packet, x_my_secret, x_their_public, ed_their_public, max_nonce_skew) do
     # Minimum: 8 (nonce) + 16 (poly1305 tag minimum) + 64 (signature) = 88 bytes
     # But we allow smaller ciphertext, so minimum is 8 + 64 = 72

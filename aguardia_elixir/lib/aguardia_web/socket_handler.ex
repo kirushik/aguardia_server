@@ -322,17 +322,21 @@ defmodule AguardiaWeb.SocketHandler do
         # Encrypt response
         inner = <<message_id::little-16, 0x01::8, response_body::binary>>
 
-        response =
-          Crypto.encrypt_and_sign(
-            inner,
-            ServerState.secret_x(),
-            ServerState.secret_ed(),
-            state.public_x
-          )
+        case Crypto.encrypt_and_sign(
+               inner,
+               ServerState.secret_x(),
+               ServerState.secret_ed(),
+               state.public_x
+             ) do
+          {:ok, response} ->
+            # Prepend server address (0)
+            payload = <<0::little-32, response::binary>>
+            {:push, {:binary, payload}, state}
 
-        # Prepend server address (0)
-        payload = <<0::little-32, response::binary>>
-        {:push, {:binary, payload}, state}
+          {:error, :message_too_large} ->
+            Logger.warning("Response too large to encrypt")
+            {:ok, state}
+        end
 
       {:ok, _} ->
         Logger.warning("Malformed decrypted packet")

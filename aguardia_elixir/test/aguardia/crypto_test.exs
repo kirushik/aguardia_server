@@ -251,7 +251,7 @@ defmodule Aguardia.CryptoTest do
       their_public = hex_decode!(@x_pk_other)
       plaintext = @test_message
 
-      ciphertext = Crypto.encrypt_message(their_public, my_secret, plaintext, @test_nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(their_public, my_secret, plaintext, @test_nonce)
 
       expected = hex_decode!(@expected_ciphertext)
       assert ciphertext == expected
@@ -313,7 +313,7 @@ defmodule Aguardia.CryptoTest do
       nonce = Crypto.get_unixtime()
 
       # A encrypts for B
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
 
       # B decrypts using A's public key
       {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
@@ -333,14 +333,13 @@ defmodule Aguardia.CryptoTest do
       plaintext = ""
       nonce = Crypto.get_unixtime()
 
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
       {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
 
       assert decrypted == plaintext
     end
 
-    @tag :skip
-    test "roundtrip with large message" do
+    test "roundtrip with message at max size limit (N)" do
       seed_a = Crypto.seed()
       sk_a = Crypto.x25519_secret(seed_a)
       pk_a = Crypto.x25519_public(sk_a)
@@ -349,14 +348,70 @@ defmodule Aguardia.CryptoTest do
       sk_b = Crypto.x25519_secret(seed_b)
       pk_b = Crypto.x25519_public(sk_b)
 
-      # 1MB message
-      plaintext = :crypto.strong_rand_bytes(1024 * 1024)
+      # Message exactly at the max size limit (128KB)
+      max_size = Crypto.max_message_size()
+      plaintext = :crypto.strong_rand_bytes(max_size)
       nonce = Crypto.get_unixtime()
 
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
       {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
 
       assert decrypted == plaintext
+    end
+
+    test "roundtrip with message one byte below max size limit (N-1)" do
+      seed_a = Crypto.seed()
+      sk_a = Crypto.x25519_secret(seed_a)
+      pk_a = Crypto.x25519_public(sk_a)
+
+      seed_b = Crypto.seed()
+      sk_b = Crypto.x25519_secret(seed_b)
+      pk_b = Crypto.x25519_public(sk_b)
+
+      # Message one byte below the max size limit
+      max_size = Crypto.max_message_size()
+      plaintext = :crypto.strong_rand_bytes(max_size - 1)
+      nonce = Crypto.get_unixtime()
+
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
+
+      assert decrypted == plaintext
+    end
+
+    test "encrypt_message returns error for message exceeding max size" do
+      seed_a = Crypto.seed()
+      sk_a = Crypto.x25519_secret(seed_a)
+
+      seed_b = Crypto.seed()
+      sk_b = Crypto.x25519_secret(seed_b)
+      pk_b = Crypto.x25519_public(sk_b)
+
+      # Message one byte over the max size limit
+      max_size = Crypto.max_message_size()
+      plaintext = :crypto.strong_rand_bytes(max_size + 1)
+      nonce = Crypto.get_unixtime()
+
+      assert {:error, :message_too_large} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+    end
+
+    test "encrypt_message returns error for large message (1MB)" do
+      seed_a = Crypto.seed()
+      sk_a = Crypto.x25519_secret(seed_a)
+
+      seed_b = Crypto.seed()
+      sk_b = Crypto.x25519_secret(seed_b)
+      pk_b = Crypto.x25519_public(sk_b)
+
+      # 1MB message - well over the limit
+      plaintext = :crypto.strong_rand_bytes(1024 * 1024)
+      nonce = Crypto.get_unixtime()
+
+      assert {:error, :message_too_large} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+    end
+
+    test "max_message_size returns 128KB" do
+      assert Crypto.max_message_size() == 131_072
     end
   end
 
@@ -377,7 +432,7 @@ defmodule Aguardia.CryptoTest do
       other_x_public = Crypto.x25519_public(other_x_secret)
 
       plaintext = "test message"
-      packet = Crypto.encrypt_and_sign(plaintext, x_secret, ed_secret, other_x_public)
+      {:ok, packet} = Crypto.encrypt_and_sign(plaintext, x_secret, ed_secret, other_x_public)
 
       # Packet should be: nonce (8) + ciphertext (len + 16 tag) + signature (64)
       # Minimum size: 8 + 16 + 64 = 88 bytes
@@ -408,7 +463,7 @@ defmodule Aguardia.CryptoTest do
       plaintext = "Hello from sender!"
 
       # Sender encrypts and signs
-      packet =
+      {:ok, packet} =
         Crypto.encrypt_and_sign(plaintext, x_secret_sender, ed_secret_sender, x_public_receiver)
 
       # Receiver verifies and decrypts (0 skew = no nonce check)
@@ -438,7 +493,7 @@ defmodule Aguardia.CryptoTest do
       text = ~s({"key":"Какой-то текст"})
 
       # Encrypt and sign
-      data = Crypto.encrypt_and_sign(text, x_sk_my, ed_sk_my, x_pk_he)
+      {:ok, data} = Crypto.encrypt_and_sign(text, x_sk_my, ed_sk_my, x_pk_he)
 
       # Verify and decrypt (with 10 second nonce skew)
       {:ok, out} = Crypto.verify_and_decrypt(data, x_sk_he, x_pk_my, ed_pk_my, 10)
@@ -475,7 +530,7 @@ defmodule Aguardia.CryptoTest do
       other_x_public = Crypto.x25519_public(other_x_secret)
 
       # Create valid packet
-      packet = Crypto.encrypt_and_sign("test", x_secret, ed_secret, other_x_public)
+      {:ok, packet} = Crypto.encrypt_and_sign("test", x_secret, ed_secret, other_x_public)
 
       # Corrupt the signature (last 64 bytes)
       packet_size = byte_size(packet)
@@ -505,7 +560,7 @@ defmodule Aguardia.CryptoTest do
       # Manually create a packet with an old timestamp
       old_nonce = Crypto.get_unixtime() - 100
 
-      ciphertext =
+      {:ok, ciphertext} =
         Crypto.encrypt_message(x_public_receiver, x_secret_sender, plaintext, old_nonce)
 
       signed_data = <<old_nonce::little-64, ciphertext::binary>>
@@ -543,7 +598,9 @@ defmodule Aguardia.CryptoTest do
 
       # Create packet with slightly old timestamp (2 seconds ago)
       nonce = Crypto.get_unixtime() - 2
-      ciphertext = Crypto.encrypt_message(x_public_receiver, x_secret_sender, plaintext, nonce)
+
+      {:ok, ciphertext} =
+        Crypto.encrypt_message(x_public_receiver, x_secret_sender, plaintext, nonce)
 
       signed_data = <<nonce::little-64, ciphertext::binary>>
       signature = Crypto.sign(signed_data, ed_secret_sender)
@@ -658,7 +715,7 @@ defmodule Aguardia.CryptoTest do
 
       # Encrypt with known nonce
       plaintext = @test_message
-      ciphertext = Crypto.encrypt_message(x_pk_he, x_sk_my, plaintext, @test_nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(x_pk_he, x_sk_my, plaintext, @test_nonce)
 
       # Verify ciphertext matches Rust
       assert ciphertext == hex_decode!(@expected_ciphertext)
@@ -709,7 +766,7 @@ defmodule Aguardia.CryptoTest do
       plaintext = <<0, 1, 0, 2, 0, 3, 0, 0, 0>>
       nonce = Crypto.get_unixtime()
 
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
       {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
 
       assert decrypted == plaintext
@@ -728,7 +785,7 @@ defmodule Aguardia.CryptoTest do
       plaintext = :binary.list_to_bin(Enum.to_list(0..255))
       nonce = Crypto.get_unixtime()
 
-      ciphertext = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
       {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
 
       assert decrypted == plaintext

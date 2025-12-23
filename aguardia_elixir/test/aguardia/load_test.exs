@@ -307,12 +307,15 @@ defmodule Aguardia.LoadTest do
 
       _packets =
         for _ <- 1..1000 do
-          Crypto.encrypt_and_sign(
-            plaintext,
-            sender_keys.x_secret,
-            sender_keys.ed_secret,
-            receiver_keys.x_public
-          )
+          {:ok, packet} =
+            Crypto.encrypt_and_sign(
+              plaintext,
+              sender_keys.x_secret,
+              sender_keys.ed_secret,
+              receiver_keys.x_public
+            )
+
+          packet
         end
 
       end_time = System.monotonic_time(:millisecond)
@@ -333,12 +336,15 @@ defmodule Aguardia.LoadTest do
       # Create packets
       packets =
         for _ <- 1..1000 do
-          Crypto.encrypt_and_sign(
-            plaintext,
-            sender_keys.x_secret,
-            sender_keys.ed_secret,
-            receiver_keys.x_public
-          )
+          {:ok, packet} =
+            Crypto.encrypt_and_sign(
+              plaintext,
+              sender_keys.x_secret,
+              sender_keys.ed_secret,
+              receiver_keys.x_public
+            )
+
+          packet
         end
 
       start_time = System.monotonic_time(:millisecond)
@@ -378,7 +384,7 @@ defmodule Aguardia.LoadTest do
         for _ <- 1..500 do
           Task.async(fn ->
             # Encrypt
-            packet =
+            {:ok, packet} =
               Crypto.encrypt_and_sign(
                 plaintext,
                 sender_keys.x_secret,
@@ -574,7 +580,8 @@ defmodule Aguardia.LoadTest do
       {time_us, _} =
         :timer.tc(fn ->
           for _ <- 1..100 do
-            Crypto.encrypt_and_sign("test", keys.x_secret, keys.ed_secret, keys.x_public)
+            {:ok, _packet} =
+              Crypto.encrypt_and_sign("test", keys.x_secret, keys.ed_secret, keys.x_public)
           end
         end)
 

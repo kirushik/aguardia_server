@@ -224,24 +224,27 @@ defmodule AguardiaWeb.Commands do
 
     inner = <<message_id::little-16, 0x00::8, body::binary>>
 
-    encrypted =
-      Crypto.encrypt_and_sign(
-        inner,
-        ServerState.secret_x(),
-        ServerState.secret_ed(),
-        target_x
-      )
+    case Crypto.encrypt_and_sign(
+           inner,
+           ServerState.secret_x(),
+           ServerState.secret_ed(),
+           target_x
+         ) do
+      {:ok, encrypted} ->
+        payload = <<0::little-32, encrypted::binary>>
 
-    payload = <<0::little-32, encrypted::binary>>
+        # Send to target via registry
+        case Registry.lookup(Aguardia.SessionRegistry, target_id) do
+          [{pid, _meta}] ->
+            send(pid, {:route, 0, payload})
+            :ok
 
-    # Send to target via registry
-    case Registry.lookup(Aguardia.SessionRegistry, target_id) do
-      [{pid, _meta}] ->
-        send(pid, {:route, 0, payload})
-        :ok
+          [] ->
+            {:error, "send_error"}
+        end
 
-      [] ->
-        {:error, "send_error"}
+      {:error, :message_too_large} ->
+        {:error, "message_too_large"}
     end
   end
 
