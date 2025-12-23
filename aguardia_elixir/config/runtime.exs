@@ -2,17 +2,39 @@ import Config
 
 # Runtime configuration loaded from environment variables
 
-if config_env() == :prod do
-  database_url =
-    System.get_env("AG_POSTGRES") ||
-      raise """
-      environment variable AG_POSTGRES is missing.
-      For example: postgres://user:pass@localhost/aguardia
-      """
+# Check if we're running a help command (don't require AG_POSTGRES for help)
+# In Burrito, args are passed differently - check both System.argv() and Burrito's method
+args =
+  if Code.ensure_loaded?(Burrito.Util.Args) do
+    try do
+      apply(Burrito.Util.Args, :argv, [])
+    rescue
+      _ -> System.argv()
+    end
+  else
+    System.argv()
+  end
 
-  config :aguardia, Aguardia.Repo,
-    url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
+help_command? =
+  match?(["help" | _], args) or match?(["-h" | _], args) or match?(["--help" | _], args)
+
+if config_env() == :prod do
+  database_url = System.get_env("AG_POSTGRES")
+
+  # Only require AG_POSTGRES if not running help command
+  if is_nil(database_url) and not help_command? do
+    raise """
+    environment variable AG_POSTGRES is missing.
+    For example: postgres://user:pass@localhost/aguardia
+    """
+  end
+
+  # Configure Repo only if we have a database URL
+  if database_url do
+    config :aguardia, Aguardia.Repo,
+      url: database_url,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
+  end
 
   host = System.get_env("AG_BIND_HOST") || "0.0.0.0"
   port = String.to_integer(System.get_env("AG_BIND_PORT") || "8112")

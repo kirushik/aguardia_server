@@ -6,3 +6,4 @@
 /read_data.sh
 /read_users.sh
 /commit.sh
+erl_crash.dump

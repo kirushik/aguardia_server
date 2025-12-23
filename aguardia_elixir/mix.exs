@@ -47,7 +47,18 @@ defmodule Aguardia.MixProject do
         steps: [:assemble, &Burrito.wrap/1],
         burrito: [
           targets: [
-            linux_x64: [os: :linux, cpu: :x86_64]
+            linux_x64: [
+              os: :linux,
+              cpu: :x86_64,
+              # Skip NIF recompilation - use host-built NIF
+              # The standalone binary requires libsodium to be installed on the target system
+              skip_nifs: true
+            ]
+          ],
+          # Custom step to copy the libsalty2 NIF into Burrito's build directory
+          # This runs in the patch phase, after Burrito sets up the build structure
+          extra_steps: [
+            patch: [post: [Aguardia.BurritoCopyNIF]]
           ]
         ]
       ]
