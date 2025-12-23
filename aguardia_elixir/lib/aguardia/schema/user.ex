@@ -113,13 +113,14 @@ defmodule Aguardia.Schema.User do
   @doc """
   Create a new device (no email).
   """
-  @spec create_device(binary(), binary(), map()) ::
+  @spec create_device(binary(), binary(), map(), map()) ::
           {:ok, %__MODULE__{}} | {:error, Ecto.Changeset.t() | :already_exists}
-  def create_device(public_x, public_ed, info \\ %{}) do
+  def create_device(public_x, public_ed, info \\ %{}, admin_info \\ %{}) do
     attrs = %{
       public_x: public_x,
       public_ed: public_ed,
-      info: info
+      info: info,
+      admin_info: admin_info
     }
 
     case Repo.insert(changeset(%__MODULE__{}, attrs), on_conflict: :nothing, returning: true) do

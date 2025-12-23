@@ -257,6 +257,7 @@ defmodule AguardiaWeb.CommandsTest do
       assert device.public_x == new_x
       assert device.public_ed == new_ed
       assert device.info == %{"name" => "My Device"}
+      assert device.admin_info == %{"created_by" => user.id, "name" => "My Device"}
     end
 
     test "returns error for duplicate keys" do

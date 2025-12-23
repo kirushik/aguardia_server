@@ -112,9 +112,8 @@ defmodule AguardiaWeb.Commands do
       info = %{"name" => name}
       admin_info = %{"created_by" => user_id, "name" => name}
 
-      case User.create_device(x, ed, info) do
+      case User.create_device(x, ed, info, admin_info) do
         {:ok, device} ->
-          # Update admin_info separately (schema doesn't include it in create_device)
           {:ok, device.id}
 
         {:error, :already_exists} ->
@@ -171,14 +170,6 @@ defmodule AguardiaWeb.Commands do
   # Authorization Helpers
   # ============================================================
 
-  @doc """
-  Check if user has access to a device.
-
-  Access is granted if:
-  1. User is an admin
-  2. User is the device (same ID)
-  3. User provides valid x/ed keys for the device (remote control)
-  """
   defp check_device_access(params, user_id, device_id) do
     cond do
       is_admin?(user_id) ->
@@ -301,10 +292,6 @@ defmodule AguardiaWeb.Commands do
     end
   end
 
-  @doc """
-  Parse a timestamp parameter that can be either a string or integer.
-  Returns the parsed value or the default.
-  """
   defp parse_timestamp(params, key, default) do
     case Map.get(params, key) do
       nil ->

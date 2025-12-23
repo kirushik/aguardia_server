@@ -265,7 +265,7 @@ defmodule AguardiaWeb.SocketHandler do
   # Binary Message Handling (Authenticated)
   # ============================================================
 
-  defp handle_binary_message(data, %{user_id: nil} = state) do
+  defp handle_binary_message(_data, %{user_id: nil} = state) do
     # Not authenticated, ignore binary messages
     Logger.warning("Received binary message from unauthenticated client")
     {:ok, state}

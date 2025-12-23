@@ -39,6 +39,7 @@ defmodule Aguardia.MixProject do
       {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
       {:swoosh, "~> 1.15"},
+      {:hackney, "~> 1.9"},
       {:gen_smtp, "~> 1.2"},
       {:libsodium, "~> 2.0"},
       {:plug_cowboy, "~> 2.7", only: :test}

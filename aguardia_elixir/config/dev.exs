@@ -1,14 +1,22 @@
 import Config
 
-config :aguardia, Aguardia.Repo,
-  username: "postgres",
-  password: "qwerty123",
-  hostname: "localhost",
-  port: 5432,
-  database: "aguardia_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+if database_url = System.get_env("AG_POSTGRES") do
+  config :aguardia, Aguardia.Repo,
+    url: database_url,
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: 10
+else
+  config :aguardia, Aguardia.Repo,
+    username: "postgres",
+    password: "qwerty123",
+    hostname: "localhost",
+    port: 5432,
+    database: "aguardia_dev",
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: 10
+end
 
 config :aguardia, AguardiaWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: 8112],
