@@ -1,9 +1,4 @@
 defmodule Aguardia.Crypto do
-  # Maximum plaintext size for encrypt_message/4.
-  # The libsodium Erlang port driver segfaults with messages larger than ~132KB.
-  # We use 128KB (131072 bytes) as a conservative safe limit.
-  @max_message_size 131_072
-
   @moduledoc """
   Cryptographic operations for the Aguardia protocol.
 
@@ -15,31 +10,8 @@ defmodule Aguardia.Crypto do
   Critical: The nonce derivation must match the Rust implementation exactly:
   24-byte nonce is created by repeating 8-byte little-endian timestamp 3 times.
 
-  This module uses the `libsodium` port driver for crypto operations.
-
-  ## Message Size Limits
-
-  The libsodium Erlang port driver has a limitation with large messages that can
-  cause segmentation faults. To prevent this, encryption functions enforce a
-  maximum plaintext size of #{@max_message_size} bytes (128KB).
-
-  For larger messages, consider chunking the data or using a streaming approach.
+  This module uses the `libsalty2` NIF bindings for crypto operations.
   """
-
-  @doc """
-  Returns the maximum allowed message size for encryption.
-
-  The libsodium Erlang port driver has a bug that causes segmentation faults
-  when encrypting messages larger than approximately 132KB. This limit is set
-  to 128KB (131,072 bytes) to provide a safe margin.
-
-  ## Examples
-
-      iex> Aguardia.Crypto.max_message_size()
-      131072
-  """
-  @spec max_message_size() :: non_neg_integer()
-  def max_message_size, do: @max_message_size
 
   @doc """
   Generate a random 32-byte seed.
@@ -92,7 +64,8 @@ defmodule Aguardia.Crypto do
   """
   @spec x25519_public(binary()) :: binary()
   def x25519_public(secret) when byte_size(secret) == 32 do
-    :libsodium_crypto_scalarmult_curve25519.base(secret)
+    {:ok, public} = Salty.Scalarmult.Curve25519.scalarmult_base(secret)
+    public
   end
 
   @doc """
@@ -101,7 +74,8 @@ defmodule Aguardia.Crypto do
   @spec x25519_shared(binary(), binary()) :: binary()
   def x25519_shared(my_secret, their_public)
       when byte_size(my_secret) == 32 and byte_size(their_public) == 32 do
-    :libsodium_crypto_scalarmult_curve25519.crypto_scalarmult_curve25519(my_secret, their_public)
+    {:ok, shared} = Salty.Scalarmult.Curve25519.scalarmult(my_secret, their_public)
+    shared
   end
 
   # ============================================================
@@ -114,7 +88,7 @@ defmodule Aguardia.Crypto do
   """
   @spec ed25519_keypair_from_seed(binary()) :: {binary(), binary()}
   def ed25519_keypair_from_seed(seed) when byte_size(seed) == 32 do
-    {public, secret} = :libsodium_crypto_sign_ed25519.seed_keypair(seed)
+    {:ok, public, secret} = Salty.Sign.Ed25519.seed_keypair(seed)
     {secret, public}
   end
 
@@ -133,7 +107,8 @@ defmodule Aguardia.Crypto do
   """
   @spec sign(binary(), binary()) :: binary()
   def sign(data, secret_key) when byte_size(secret_key) == 64 do
-    :libsodium_crypto_sign_ed25519.detached(data, secret_key)
+    {:ok, signature} = Salty.Sign.Ed25519.sign_detached(data, secret_key)
+    signature
   end
 
   @doc """
@@ -142,8 +117,8 @@ defmodule Aguardia.Crypto do
   @spec verify(binary(), binary(), binary()) :: boolean()
   def verify(data, signature, public_key)
       when byte_size(signature) == 64 and byte_size(public_key) == 32 do
-    case :libsodium_crypto_sign_ed25519.verify_detached(signature, data, public_key) do
-      0 -> true
+    case Salty.Sign.Ed25519.verify_detached(signature, data, public_key) do
+      :ok -> true
       _ -> false
     end
   end
@@ -157,41 +132,35 @@ defmodule Aguardia.Crypto do
 
   Returns `{:ok, ciphertext}` on success, or `{:error, reason}` on failure.
 
-  ## Errors
-
-  - `{:error, :message_too_large}` - The plaintext exceeds #{@max_message_size} bytes.
-    The libsodium Erlang port driver has a bug that causes segmentation faults
-    with large messages. Use `max_message_size/0` to check the limit.
-
   ## Examples
 
       iex> {:ok, ciphertext} = Crypto.encrypt_message(their_public, my_secret, "hello", nonce)
       iex> is_binary(ciphertext)
       true
-
-      iex> large_message = :crypto.strong_rand_bytes(200_000)
-      iex> Crypto.encrypt_message(their_public, my_secret, large_message, nonce)
-      {:error, :message_too_large}
   """
   @spec encrypt_message(binary(), binary(), binary(), non_neg_integer()) ::
-          {:ok, binary()} | {:error, :message_too_large}
+          {:ok, binary()} | {:error, term()}
   def encrypt_message(their_public, my_secret, plaintext, nonce) do
-    if byte_size(plaintext) > @max_message_size do
-      {:error, :message_too_large}
-    else
-      shared = x25519_shared(my_secret, their_public)
-      nonce_bytes = nonce_from_u64(nonce)
-      # AEAD with empty associated data
-      ciphertext =
-        :libsodium_crypto_aead_xchacha20poly1305.ietf_encrypt(
-          plaintext,
-          <<>>,
-          nonce_bytes,
-          shared
-        )
+    shared = x25519_shared(my_secret, their_public)
+    nonce_bytes = nonce_from_u64(nonce)
 
-      {:ok, ciphertext}
+    # AEAD with empty associated data
+    # libsalty2 API: encrypt(plain, ad, nsec, npub, key)
+    # nsec is not used (nil), npub is the nonce, key is the shared secret
+    case Salty.Aead.Xchacha20poly1305Ietf.encrypt(
+           plaintext,
+           <<>>,
+           nil,
+           nonce_bytes,
+           shared
+         ) do
+      {:ok, ciphertext} -> {:ok, ciphertext}
+      {:error, reason} -> {:error, reason}
     end
+  rescue
+    e -> {:error, {:encryption_failed, e}}
+  catch
+    kind, reason -> {:error, {kind, reason}}
   end
 
   @doc """
@@ -201,8 +170,6 @@ defmodule Aguardia.Crypto do
 
   ## Errors
 
-  - `{:error, :ciphertext_too_large}` - The ciphertext exceeds the maximum allowed size.
-    This corresponds to a plaintext that would have been larger than #{@max_message_size} bytes.
   - `{:error, :decrypt_failed}` - Decryption failed (invalid ciphertext or wrong key).
 
   ## Examples
@@ -212,38 +179,27 @@ defmodule Aguardia.Crypto do
       "hello"
   """
   @spec decrypt_message(binary(), binary(), binary(), non_neg_integer()) ::
-          {:ok, binary()} | {:error, :decrypt_failed | :ciphertext_too_large}
+          {:ok, binary()} | {:error, :decrypt_failed | term()}
   def decrypt_message(their_public, my_secret, ciphertext, nonce) do
-    # Ciphertext includes 16-byte Poly1305 tag, so max ciphertext size is max_message_size + 16
-    max_ciphertext_size = @max_message_size + 16
+    shared = x25519_shared(my_secret, their_public)
+    nonce_bytes = nonce_from_u64(nonce)
 
-    if byte_size(ciphertext) > max_ciphertext_size do
-      {:error, :ciphertext_too_large}
-    else
-      shared = x25519_shared(my_secret, their_public)
-      nonce_bytes = nonce_from_u64(nonce)
-
-      try do
-        result =
-          :libsodium_crypto_aead_xchacha20poly1305.ietf_decrypt(
-            ciphertext,
-            <<>>,
-            nonce_bytes,
-            shared
-          )
-
-        # libsodium returns -1 on decryption failure instead of raising
-        case result do
-          -1 -> {:error, :decrypt_failed}
-          plaintext when is_binary(plaintext) -> {:ok, plaintext}
-          _ -> {:error, :decrypt_failed}
-        end
-      rescue
-        _ -> {:error, :decrypt_failed}
-      catch
-        _, _ -> {:error, :decrypt_failed}
-      end
+    # libsalty2 API: decrypt(nsec, cipher, ad, npub, key)
+    case Salty.Aead.Xchacha20poly1305Ietf.decrypt(
+           nil,
+           ciphertext,
+           <<>>,
+           nonce_bytes,
+           shared
+         ) do
+      {:ok, plaintext} -> {:ok, plaintext}
+      {:error, _} -> {:error, :decrypt_failed}
+      _ -> {:error, :decrypt_failed}
     end
+  rescue
+    _ -> {:error, :decrypt_failed}
+  catch
+    _, _ -> {:error, :decrypt_failed}
   end
 
   @doc """
@@ -251,13 +207,9 @@ defmodule Aguardia.Crypto do
 
   Returns `{:ok, packet}` where packet is `<<nonce::64, ciphertext::binary, signature::64>>`,
   or `{:error, reason}` on failure.
-
-  ## Errors
-
-  - `{:error, :message_too_large}` - The plaintext exceeds #{@max_message_size} bytes.
   """
   @spec encrypt_and_sign(binary(), binary(), binary(), binary()) ::
-          {:ok, binary()} | {:error, :message_too_large}
+          {:ok, binary()} | {:error, term()}
   def encrypt_and_sign(plaintext, x_my_secret, ed_my_secret, x_their_public) do
     nonce = get_unixtime()
 
@@ -286,12 +238,10 @@ defmodule Aguardia.Crypto do
   - {:error, :bad_signature} if signature verification fails
   - {:error, :bad_nonce} if nonce is too far from current time
   - {:error, :decrypt_failed} if decryption fails
-  - {:error, :ciphertext_too_large} if ciphertext exceeds maximum size
   """
   @spec verify_and_decrypt(binary(), binary(), binary(), binary(), non_neg_integer()) ::
           {:ok, binary()}
-          | {:error,
-             :bad_format | :bad_signature | :bad_nonce | :decrypt_failed | :ciphertext_too_large}
+          | {:error, :bad_format | :bad_signature | :bad_nonce | :decrypt_failed | term()}
   def verify_and_decrypt(packet, x_my_secret, x_their_public, ed_their_public, max_nonce_skew) do
     # Minimum: 8 (nonce) + 16 (poly1305 tag minimum) + 64 (signature) = 88 bytes
     # But we allow smaller ciphertext, so minimum is 8 + 64 = 72

@@ -339,7 +339,7 @@ defmodule Aguardia.CryptoTest do
       assert decrypted == plaintext
     end
 
-    test "roundtrip with message at max size limit (N)" do
+    test "roundtrip with 128KB message" do
       seed_a = Crypto.seed()
       sk_a = Crypto.x25519_secret(seed_a)
       pk_a = Crypto.x25519_public(sk_a)
@@ -348,9 +348,8 @@ defmodule Aguardia.CryptoTest do
       sk_b = Crypto.x25519_secret(seed_b)
       pk_b = Crypto.x25519_public(sk_b)
 
-      # Message exactly at the max size limit (128KB)
-      max_size = Crypto.max_message_size()
-      plaintext = :crypto.strong_rand_bytes(max_size)
+      # 128KB message
+      plaintext = :crypto.strong_rand_bytes(128 * 1024)
       nonce = Crypto.get_unixtime()
 
       {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
@@ -359,7 +358,7 @@ defmodule Aguardia.CryptoTest do
       assert decrypted == plaintext
     end
 
-    test "roundtrip with message one byte below max size limit (N-1)" do
+    test "roundtrip with 1MB message (libsalty2 NIF supports large payloads)" do
       seed_a = Crypto.seed()
       sk_a = Crypto.x25519_secret(seed_a)
       pk_a = Crypto.x25519_public(sk_a)
@@ -368,50 +367,48 @@ defmodule Aguardia.CryptoTest do
       sk_b = Crypto.x25519_secret(seed_b)
       pk_b = Crypto.x25519_public(sk_b)
 
-      # Message one byte below the max size limit
-      max_size = Crypto.max_message_size()
-      plaintext = :crypto.strong_rand_bytes(max_size - 1)
-      nonce = Crypto.get_unixtime()
-
-      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
-      {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
-
-      assert decrypted == plaintext
-    end
-
-    test "encrypt_message returns error for message exceeding max size" do
-      seed_a = Crypto.seed()
-      sk_a = Crypto.x25519_secret(seed_a)
-
-      seed_b = Crypto.seed()
-      sk_b = Crypto.x25519_secret(seed_b)
-      pk_b = Crypto.x25519_public(sk_b)
-
-      # Message one byte over the max size limit
-      max_size = Crypto.max_message_size()
-      plaintext = :crypto.strong_rand_bytes(max_size + 1)
-      nonce = Crypto.get_unixtime()
-
-      assert {:error, :message_too_large} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
-    end
-
-    test "encrypt_message returns error for large message (1MB)" do
-      seed_a = Crypto.seed()
-      sk_a = Crypto.x25519_secret(seed_a)
-
-      seed_b = Crypto.seed()
-      sk_b = Crypto.x25519_secret(seed_b)
-      pk_b = Crypto.x25519_public(sk_b)
-
-      # 1MB message - well over the limit
+      # 1MB message - supported with libsalty2 NIF (no size limit)
       plaintext = :crypto.strong_rand_bytes(1024 * 1024)
       nonce = Crypto.get_unixtime()
 
-      assert {:error, :message_too_large} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
+
+      assert decrypted == plaintext
     end
 
-    test "max_message_size returns 128KB" do
-      assert Crypto.max_message_size() == 131_072
+    @tag :slow
+    test "roundtrip with 5MB message (no artificial size limit)" do
+      seed_a = Crypto.seed()
+      sk_a = Crypto.x25519_secret(seed_a)
+      pk_a = Crypto.x25519_public(sk_a)
+
+      seed_b = Crypto.seed()
+      sk_b = Crypto.x25519_secret(seed_b)
+      pk_b = Crypto.x25519_public(sk_b)
+
+      # 5MB message - libsalty2 NIF handles large payloads gracefully
+      plaintext = :crypto.strong_rand_bytes(5 * 1024 * 1024)
+      nonce = Crypto.get_unixtime()
+
+      {:ok, ciphertext} = Crypto.encrypt_message(pk_b, sk_a, plaintext, nonce)
+      {:ok, decrypted} = Crypto.decrypt_message(pk_a, sk_b, ciphertext, nonce)
+
+      assert decrypted == plaintext
+    end
+
+    test "encryption handles errors gracefully (no crashes)" do
+      seed_a = Crypto.seed()
+      sk_a = Crypto.x25519_secret(seed_a)
+
+      # Invalid public key (wrong size)
+      invalid_pk = <<0::8*16>>
+      plaintext = "test message"
+      nonce = Crypto.get_unixtime()
+
+      # Should return an error tuple, not crash
+      result = Crypto.encrypt_message(invalid_pk, sk_a, plaintext, nonce)
+      assert match?({:error, _}, result)
     end
   end
 
