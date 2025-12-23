@@ -256,7 +256,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "aguardia_pulse"
+name = "aguardia_server"
 version = "0.2.2"
 dependencies = [
  "actix-cors",
